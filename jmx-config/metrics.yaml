@@ -1,0 +1,10 @@
+---
+# see https://github.com/prometheus/jmx_exporter for details
+startDelaySeconds: 0
+jmxUrl: service:jmx:rmi:///jndi/rmi://127.0.0.1:5556/jmxrmi
+ssl: false
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+whitelistObjectNames: []
+blacklistObjectNames: []
+rules: []
