@@ -1,3 +1,0 @@
-prometheus:
-  url: http://prometheus-operator-prometheus.default.svc
-  port: 9090
