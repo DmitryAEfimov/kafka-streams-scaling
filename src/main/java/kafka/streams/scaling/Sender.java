@@ -12,6 +12,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.serialization.UUIDSerializer;
 import org.apache.log4j.Logger;
 
 public class Sender {
@@ -49,7 +50,7 @@ public class Sender {
 		properties.put("linger.ms", 1);
 		properties.put("buffer.memory", 33554432);
 
-		properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+		properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, UUIDSerializer.class);
 		properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
 		log.info("Init Kafka Producer");
