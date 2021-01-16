@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-find /opt/app -print0 | xargs -0 ls -la
-if [ -z "${SENDER_MODE}" ]; then
+if [ -z "${SENDER_MODE}" ] || [ "${SENDER_MODE}" != "1" ]; then
   java -Dcom.sun.management.jmxremote.port="${JMX_REMOTE_PORT}" -Dcom.sun.management.jmxremote.authenticate="${JMX_REMOTE_AUTH_ENABLE}" \
      -Dcom.sun.management.jmxremote.ssl="${JMX_REMOTE_SSL}" \
      -Djava.util.logging.config.file=/opt/app/logging/logging.properties \
