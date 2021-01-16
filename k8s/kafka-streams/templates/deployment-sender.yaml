@@ -1,27 +1,37 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: {{ include "kafka-streams.fullname" . }}-sender
+  name: "{{ .Release.Name }}-sender-check-kafka-topic"
   labels:
-    {{- include "kafka-streams.labels" . | nindent 4 }}-sender
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
-  replicas: {{ .Values.senderReplicaCount }}
-  selector:
-    matchLabels:
-      {{- include "kafka-streams.selectorLabels" . | nindent 6 }}-sender
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      name: "{{ .Release.Name }}"
       labels:
-        {{- include "kafka-streams.selectorLabels" . | nindent 8 }}-sender
+        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      restartPolicy: Never
+      initContainers:
+        - name: check-kafka-in-topic-ready
+          image: "alpine"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - "-c"
+            - |
+              apk add kafkacat && until [ $(kafkacat -L -b {{ printf "%s://%s:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }} | grep -E 'topic\s\"({{ .Values.application.kafka.inTopicName }})\"' | wc -l ) -eq 1 ]; do echo waiting for kafka initialization; sleep 2; done
       containers:
         - name: {{ .Chart.Name }}-sender
           securityContext:
@@ -30,9 +40,15 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: BOOTSTRAP_SERVERS_CONFIG
-              value: {{ printf "%s://%s-headless:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }}
+              value: {{ printf "%s://%s:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }}
             - name: SENDER_MODE
-              value: "true"
+              value: "1"
+            - name: IN_TOPIC_NAME
+              value: {{ .Values.application.kafka.inTopicName | quote }}
+            - name: SENDER_CHUNK_CNT
+              value: {{ .Values.application.sender.chunkCnt | quote }}
+            - name: SENDER_CHUNK_SIZE
+              value: {{ .Values.application.sender.chunkSize | quote }}
           resources:
           {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
