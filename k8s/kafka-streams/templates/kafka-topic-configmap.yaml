@@ -66,8 +66,8 @@ data:
 
     echo "Kafka create topics init"
 
-    /opt/bitnami/kafka/bin/kafka-topics.sh --create --partitions {{ .Values.autoscaling.maxReplicas }} --topic inScalingTopic --zookeeper {{ (include "kafka-streams.fullname" . ) }}-zookeeper --replication-factor 1
-    /opt/bitnami/kafka/bin/kafka-topics.sh --create --partitions {{ .Values.autoscaling.minReplicas }} --topic outScalingTopic --zookeeper {{ (include "kafka-streams.fullname" . ) }}-zookeeper --replication-factor 1
+    /opt/bitnami/kafka/bin/kafka-topics.sh --create --partitions {{ .Values.autoscaling.maxReplicas }} --topic {{ .Values.application.kafka.inTopicName | quote }} --zookeeper {{ (include "kafka-streams.fullname" . ) }}-zookeeper --replication-factor 1
+    /opt/bitnami/kafka/bin/kafka-topics.sh --create --partitions {{ .Values.autoscaling.minReplicas }} --topic {{ .Values.application.kafka.outTopicName | quote }} --zookeeper {{ (include "kafka-streams.fullname" . ) }}-zookeeper --replication-factor 1
 
     kafka_stop
 

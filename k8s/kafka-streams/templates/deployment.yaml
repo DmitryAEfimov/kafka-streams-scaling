@@ -27,6 +27,15 @@ spec:
       serviceAccountName: {{ include "kafka-streams.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: check-kafka-inout-topic-ready
+          image: "alpine"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - "-c"
+            - |
+              apk add kafkacat && until [ $(kafkacat -L -b {{ printf "%s://%s:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }} | grep -E 'topic\s\"({{ .Values.application.kafka.inTopicName }}|{{ .Values.application.kafka.outTopicName }})\"' | wc -l ) -eq 2 ]; do echo waiting for kafka initialization; sleep 2; done
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

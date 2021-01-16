@@ -55,6 +55,12 @@ resources: {}
   #   memory: 128Mi
 
 application:
+  sender:
+    chunkCnt: 30
+    chunkSize: 10000
+  kafka:
+    inTopicName: inScalingTopic
+    outTopicName: outScalingTopic
   jmxExport:
     serviceMonitor:
       enabled: true
