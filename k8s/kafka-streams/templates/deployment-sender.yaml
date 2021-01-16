@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{{ .Release.Name }}-sender-check-kafka-topic"
+  name: {{ include "kafka-streams.fullname" . }}-sender
   labels:
     app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
     app.kubernetes.io/instance: {{ .Release.Name | quote }}
@@ -16,11 +16,12 @@ metadata:
 spec:
   template:
     metadata:
-      name: "{{ .Release.Name }}"
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
-        app.kubernetes.io/instance: {{ .Release.Name | quote }}
-        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        {{- include "kafka-streams.selectorLabels" . | nindent 8 }}
     spec:
       restartPolicy: Never
       initContainers:

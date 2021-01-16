@@ -3,7 +3,7 @@ ARG jmx_exporter_version="0.14.0"
 FROM gradle:6.8.0-jdk11-openj9 AS app-build
 COPY --chown=gradle:gradle . /home/gradle/app
 WORKDIR /home/gradle/app
-RUN gradle clean build fatJar --no-daemon
+RUN gradle build fatJar --no-daemon
 
 # clone jmx-exporter
 FROM alpine/git:v2.26.2 AS clone
