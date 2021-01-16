@@ -2,6 +2,7 @@ package kafka.streams.scaling;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -17,7 +18,8 @@ public class Sender {
 
 	public static void main(String[] args) {
 		Properties properties = new Properties();
-		properties.put("bootstrap.servers", "localhost:9092");
+		properties.put("bootstrap.servers",
+				Optional.ofNullable(System.getenv("BOOTSTRAP_SERVERS_CONFIG")).orElse("localhost:9092"));
 		properties.put("acks", "all");
 		properties.put("retries", 0);
 		properties.put("batch.size", 16384);

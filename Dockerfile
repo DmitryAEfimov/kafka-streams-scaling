@@ -1,8 +1,8 @@
 ARG jmx_exporter_version="0.14.0"
 # build application
 FROM gradle:6.8.0-jdk11-openj9 AS app-build
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
+COPY --chown=gradle:gradle . /home/gradle/app
+WORKDIR /home/gradle/app
 RUN gradle clean build fatJar --no-daemon
 
 # clone jmx-exporter
@@ -26,18 +26,21 @@ ARG jmx_exporter_version
 ENV JMX_EXPORTER_VERSION="${jmx_exporter_version}"
 
 WORKDIR /opt/app
-COPY --from=app-build /home/gradle/src/build/libs/kafka-streams-scaling-all.jar .
 
-RUN mkdir ./jmx-exporter
-COPY --from=jmx-exporter-build /jmx_exporter/jmx_prometheus_javaagent/target/jmx_prometheus_javaagent-"${JMX_EXPORTER_VERSION}".jar ./jmx-exporter/
-COPY jmx-config/ ./jmx-exporter/config/
+COPY --from=app-build /home/gradle/app/build/libs/kafka-streams-scaling-all.jar .
+COPY --from=jmx-exporter-build /jmx_exporter/jmx_prometheus_javaagent/target/jmx_prometheus_javaagent-"${JMX_EXPORTER_VERSION}".jar .
+COPY docker-build-config/entrypoint.sh .
+
+RUN mkdir ./logging && mkdir ./metrics
+COPY docker-build-config/metrics.yaml ./metrics
+COPY docker-build-config/logging.properties ./logging
 
 RUN groupadd -g 999 appuser && \
     useradd -r -u 999 -g appuser appuser && \
-    chown -R appuser:appuser /opt/app/ && \
-    chmod 644 kafka-streams-scaling-all.jar && \
-    chmod 644 ./jmx-exporter/jmx_prometheus_javaagent-"${JMX_EXPORTER_VERSION}".jar && \
-    chmod 644 ./jmx-exporter/config/*
+    chown -R appuser:appuser . && \
+    find . -type f -print0 | xargs -0 chmod 644 && \
+    find . -type d -print0 | xargs -0 chmod 755 && \
+    chmod 755 entrypoint.sh
 USER appuser
 
 EXPOSE 5556
@@ -45,11 +48,6 @@ EXPOSE 5556
 ENV JMX_REMOTE_PORT=5555
 ENV JMX_REMOTE_AUTH_ENABLE="false"
 ENV JMX_REMOTE_SSL="false"
-ENV JMX_LOG_PROPERTIES="/opt/app/jmx-exporter/config/logging.properties"
-ENV JMX_METRICS_CFG_FILE="/opt/app/jmx-exporter/config/metrics.yaml"
+ENV METRICS_EXPOSE_PORT=5556
 
-ENTRYPOINT java -Dcom.sun.management.jmxremote.authenticate="${JMX_REMOTE_AUTH_ENABLE}" \
-                -Dcom.sun.management.jmxremote.ssl="${JMX_REMOTE_SSL}" \
-                -Djava.util.logging.config.file="${JMX_LOG_PROPERTIES}" \
-                -javaagent:/opt/app/jmx-exporter/jmx_prometheus_javaagent-"${JMX_EXPORTER_VERSION}".jar=${JMX_REMOTE_PORT}:"${JMX_METRICS_CFG_FILE}" \
-                -jar /opt/app/kafka-streams-scaling-all.jar
+ENTRYPOINT /opt/app/entrypoint.sh
