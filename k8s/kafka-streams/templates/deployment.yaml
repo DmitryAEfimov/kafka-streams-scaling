@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kafka-streams.fullname" . }}
+  labels:
+    {{- include "kafka-streams.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kafka-streams.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "kafka-streams.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kafka-streams.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: BOOTSTRAP_SERVERS_CONFIG
+              value: {{ printf "%s://%s-headless:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }}
+            - name: JMX_REMOTE_PORT
+              value: {{ .Values.application.jmxRemote.port | toString | quote }}
+            - name: JMX_REMOTE_AUTH_ENABLE
+              value: {{ .Values.application.jmxRemote.auth.enable | quote }}
+            - name: JMX_REMOTE_SSL
+              value: {{ .Values.application.jmxRemote.ssl | quote }}
+            - name: METRICS_EXPOSE_PORT
+              value: {{ .Values.service.containerPort | toString | quote }}
+          ports:
+            - containerPort: {{ .Values.service.containerPort }}
+              protocol: TCP
+              name: metrics
+          resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.application.jmxExport.serviceMonitor.enabled }}
+            - name: jmx-export-metrics-config
+              mountPath: {{ .Values.application.jmxExport.metricConfigDir | quote }}
+            {{- end }}
+            - name: jmx-export-logging-config
+              mountPath: {{ .Values.application.jmxExport.logPropertyDir | quote }}
+      volumes:
+          {{- if .Values.application.jmxExport.serviceMonitor.enabled }}
+        - name: jmx-export-metrics-config
+          configMap:
+            name: {{ include "kafka-streams.fullname" . }}-metrics-cm
+          {{- end }}
+        - name: jmx-export-logging-config
+          configMap:
+            name: {{ include "kafka-streams.fullname" . }}-logging-cm
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

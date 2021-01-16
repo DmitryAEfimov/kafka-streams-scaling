@@ -1,0 +1,100 @@
+# Default values for kafka-streams.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+senderReplicaCount: 1
+
+image:
+  repository: defimov/kafka-streams-scaling
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: latest
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 5556
+  containerPort: 5556
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+application:
+  jmxExport:
+    serviceMonitor:
+      enabled: true
+    logPropertyDir: /opt/app/logging
+    metricConfigDir: /opt/app/metrics
+    params:
+      url: 127.0.0.1
+      port: 5555
+      rmi: jmxrmi
+      whitelistObjectNames:
+        - kafka.consumer:*
+  jmxRemote:
+      port: 5555
+      auth:
+        enable: false
+      ssl: false
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetAverageFetchLag: 10000
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+kafka:
+  autoCreateTopicsEnable: false
+  extraVolumes:
+    - name: custom-init-scripts
+      configMap:
+        name: kafka-streams-kafka-topic-init
+  extraVolumeMounts:
+    - name: custom-init-scripts
+      mountPath: /docker-entrypoint-initdb.d
+
+prometheus-adapter:
+  prometheus:
+    url: http://prometheus-operated
+    port: 9090

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kafka-streams.fullname" . }}-sender
+  labels:
+    {{- include "kafka-streams.labels" . | nindent 4 }}-sender
+spec:
+  replicas: {{ .Values.senderReplicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kafka-streams.selectorLabels" . | nindent 6 }}-sender
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "kafka-streams.selectorLabels" . | nindent 8 }}-sender
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-sender
+          securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: BOOTSTRAP_SERVERS_CONFIG
+              value: {{ printf "%s://%s-headless:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }}
+            - name: SENDER_MODE
+              value: "true"
+          resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

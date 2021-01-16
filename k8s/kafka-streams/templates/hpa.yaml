@@ -1,0 +1,22 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kafka-streams.fullname" . }}
+  labels:
+    {{- include "kafka-streams.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kafka-streams.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.autoscaling.targetAverageFetchLag }}
+    - type: Pods
+      pods:
+        metricName: kafka_consumer_consumer_fetch_manager_metrics_records_lag
+        targetAverageValue: {{ .Values.autoscaling.targetAverageFetchLag }}
+    {{- end }}
+{{- end }}

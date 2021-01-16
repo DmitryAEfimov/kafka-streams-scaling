@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ (include "kafka.fullname" . ) }}-topic-init
+data:
+  create-topics.sh: |
+    #!/bin/bash
+    # see https://github.com/bitnami/bitnami-docker-kafka/issues/75#issuecomment-600005698
+
+    set +x
+
+    . /opt/bitnami/scripts/libkafka.sh
+
+    # Load Kafka environment
+    eval "$(kafka_env)"
+
+    kafka_start_bg() {
+      if [[ "${KAFKA_CFG_LISTENERS:-}" =~ SASL ]] || [[ "${KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP:-}" =~ SASL ]]; then
+        export KAFKA_OPTS="-Djava.security.auth.login.config=$KAFKA_HOME/conf/kafka_jaas.conf"
+      fi
+      local flags=("$KAFKA_CONF_DIR/server.properties")
+      [[ -z "${KAFKA_EXTRA_FLAGS:-}" ]] || flags=("${flags[@]}" "${KAFKA_EXTRA_FLAGS[@]}")
+      local start_command=("$KAFKA_HOME/bin/kafka-server-start.sh" "${flags[@]}")
+
+      info "Starting Kafka in background"
+      am_i_root && start_command=("gosu" "${KAFKA_DAEMON_USER}" "${start_command[@]}")
+      if [[ "${BITNAMI_DEBUG:-false}" = true ]]; then
+        "${$start_command[@]}" &
+      else
+        "${start_command[@]}" >/dev/null 2>&1 &
+      fi
+      # Wait for Kakfa to start
+      local counter=0
+      while (( counter < 60 )); do
+        if ( cat < /dev/null > /dev/tcp/localhost/"${{ (include "kafka.fullname" . | upper | replace "-" "_") }}_SERVICE_PORT" ) 2> /dev/null; then
+            break
+        fi
+        echo "kafka not started yet: $counter sec"
+        sleep 1
+        counter=$((counter+1))
+      done
+    }
+
+    kafka_stop() {
+      info "Stopping Kafka"
+      local stop_command=("$KAFKA_HOME/bin/kafka-server-stop.sh")
+      am_i_root && stop_command=("gosu" "${KAFKA_DAEMON_USER}" "${stop_command[@]}")
+      if [[ "${BITNAMI_DEBUG:-false}" = true ]]; then
+        "${stop_command[@]}"
+      else
+        "${stop_command[@]}" >/dev/null 2>&1
+      fi
+    }
+
+    are_brokers_available() {
+        zookeeper-shell.sh {{ (include "kafka-streams.fullname" . ) }}-zookeeper ls /brokers/ids > /dev/null 2>&1
+        return $?
+    }
+
+    kafka_start_bg
+
+    while ! are_brokers_available; do
+        echo "brokers not available yet"
+        sleep 5
+    done
+
+    echo "Kafka create topics init"
+
+    /opt/bitnami/kafka/bin/kafka-topics.sh --create --partitions {{ .Values.autoscaling.maxReplicas }} --topic inScalingTopic --zookeeper {{ (include "kafka-streams.fullname" . ) }}-zookeeper --replication-factor 1
+    /opt/bitnami/kafka/bin/kafka-topics.sh --create --partitions {{ .Values.autoscaling.minReplicas }} --topic outScalingTopic --zookeeper {{ (include "kafka-streams.fullname" . ) }}-zookeeper --replication-factor 1
+
+    kafka_stop
+
+    echo "Kafka create topics done"

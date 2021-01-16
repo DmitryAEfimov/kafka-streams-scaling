@@ -1,0 +1,19 @@
+{{- if .Values.application.jmxExport.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "kafka-streams.fullname" . }}-service-monitor
+  labels:
+  {{- include "kafka-streams.labels" . | nindent 4 }}
+spec:
+  jobLabel: {{ include "kafka-streams.fullname" . }}
+  namespaceSelector:
+    matchNames:
+      - "{{ $.Release.Namespace }}"
+  selector:
+    matchLabels:
+  {{- include "kafka-streams.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - interval: 15s
+      port: metrics
+{{- end }}
