@@ -47,7 +47,7 @@ Open grafana dashboards in browser ``` http://localhost:<localhost_tcp_port> ```
 
 Select dashboard named ``` Kafka Streams Auto Scaling ```
 
-See similar ![result](https://github.com/DmitryAEfimov/kafka-streams-scaling/tree/main/k8s/result.png)
+See similar ![result](k8s/result.png)
 
 ### Stop containers
 ``` cd $APP_HOME/k8s/kafka-streams && ./delete.sh ```
