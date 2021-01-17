@@ -1,58 +1,55 @@
-# Scaling Kafka Streams applications with Kubernetes
+#Autoscaling Kafka Streams applications with Prometheus and Kubernetes
+Detailed explanation what this repo is about is available at [post](https://blog.softwaremill.com/autoscaling-kafka-streams-applications-with-kubernetes-9aed2e37d3a0).
 
-Detailed explanation what this repo is about is available at [Autoscaling Kafka Streams applications with Kubernetes](https://blog.softwaremill.com/autoscaling-kafka-streams-applications-with-kubernetes-9aed2e37d3a0).
+## Requirements
+1. Kubernetes cluster. You can install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) locally.
+2. [Helm](https://helm.sh/docs/intro/install/) version 3+.
 
-## TL;DR
+## PreInstall
+Install external helm repositories [bitnami](https://charts.bitnami.com/bitnami) & [prometheus-community](https://prometheus-community.github.io/helm-charts)
 
-```
-$ cd $CONFLUENT_HOME
-$ ./bin/zookeeper-server-start etc/kafka/zookeeper.properties
-$ ./bin/kafka-server-start etc/kafka/server.properties
-       
-$ ./bin/kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 3 --topic inScalingTopic
-$ ./bin/kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic outScalingTopic
-
-$ ./bin/kafka-console-producer --broker-list localhost:9092 --topic inScalingTopic --property parse.key=true --property key.separator=:
->b4320f5d-4d16-4999-827d-190d7d44da45:SomeRandomMessage
->0336df45-c5f4-486d-8f15-871881b158ec:done
->9acec74a-cbfb-4bd5-90da-5f661b06f2b6:AnotherRandomMessage
-
-$ ./bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic outScalingTopic --from-beginning --property print.key=true
-
-$ cd $APP_HOME
-$ ./gradlew clean build fatJar
-$ java -Dcom.sun.management.jmxremote.port=5555 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -jar build/libs/kafka-streams-scaling-all.jar
-$ java -Dcom.sun.management.jmxremote.port=5556 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -jar build/libs/kafka-streams-scaling-all.jar
-$ java -Dcom.sun.management.jmxremote.port=5557 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -jar build/libs/kafka-streams-scaling-all.jar
-
-$ java -cp build/libs/kafka-streams-scaling-all.jar kafka.streams.scaling.Sender
-
-```
-
-## Misc / Scratchpad
-```
-$ ./bin/kafka-run-class kafka.tools.GetOffsetShell  --topic inScalingTopic --broker-list localhost:9092 
-$ ./kafka-consumer-groups --bootstrap-server --group --describe
-$ ./bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic outScalingTopic --from-beginning --property print.timestamp=true --property print.key=true  --property value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
-$ echo "get -s -b kafka.consumer:type=consumer-fetch-manager-metrics,client-id=ks-scaling-app-app-id-0db65a38-f83e-4e23-a049-7c66bff16bf3-StreamThread-1-consumer,topic=inSimpleScalingTopic2,partition=1 records-lead" | java -jar jmxterm-1.0.0-uber.jar -l localhost:5556 -v silent -n
-```
-
-### Pre-install
-Install and configure [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
-
-Install and configure [helm](https://helm.sh/docs/intro/install/)
-
-Install external helm charts
-* [bitnami](https://charts.bitnami.com/bitnami)
-* [prometheus-community](https://prometheus-community.github.io/helm-charts)
-  
 ``` helm repo add bitnami https://charts.bitnami.com/bitnami ```
 
 ``` helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ```
 
-### Install & Run
-Download [deployment directory](https://github.com/DmitryAEfimov/kafka-streams-scaling/tree/main/k8s) to local host
+``` helm repo update ```
 
-Execute ``` install.sh ``` to install or update chart
+## TL;DR
 
-Execute ``` delete.sh ``` to delete chart
+``` APP_HOME=<absolute_path_to_application> ```
+
+``` mkdir --parents $APP_HOME && cd $APP_HOME ``` then download [default deployment helm configuration](https://github.com/DmitryAEfimov/kafka-streams-scaling/tree/main/k8s) to it
+
+``` minikube start [<...you minikube config here...>] ```
+
+``` kubectl create namespace kafka ```
+
+``` kubectl config set-context --current --namespace kafka ```
+
+### Install or Update prometheus-stack
+``` cd $APP_HOME/k8s/prometheus-stack && ./install.sh ```
+
+### Install or Update kafka-streams
+Check [dependencies](https://github.com/DmitryAEfimov/kafka-streams-scaling/blob/main/k8s/kafka-streams/Chart.yaml) actual version ``` helm search repo | grep '<repo_name>/<chart_name>' ```. 
+
+Update versions if needed:
+* Edit version numbers in ``` $APP_HOME/k8s/kafka-streams/Chart.yaml ```
+* ``` cd $APP_HOME/k8s/kafka-streams/charts && helm pull <repo_name>/<chart_name> ```
+
+``` cd $APP_HOME/k8s/kafka-streams && ./install.sh ```
+
+### Check results
+You can use ``` watch kubectl get all ``` command to watch pods state
+
+Forward grafana service TCP port to localhost ``` kubectl port-forward service/prometheus-stack-grafana <localhost_tcp_port>:80 ```.
+
+Open grafana dashboards in browser ``` http://localhost:<localhost_tcp_port> ``` and login with default credentials ``` admin/prom-operator ```
+
+Select dashboard named ``` Kafka Streams Auto Scaling ```
+
+See similar ![result](https://github.com/DmitryAEfimov/kafka-streams-scaling/tree/main/k8s/result.png)
+
+### Stop containers
+``` cd $APP_HOME/k8s/kafka-streams && ./delete.sh ```
+
+``` cd $APP_HOME/k8s/prometheus-stack && ./delete.sh ```
