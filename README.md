@@ -1,4 +1,4 @@
-#Autoscaling Kafka Streams applications with Prometheus and Kubernetes
+# Autoscaling Kafka Streams applications with Prometheus and Kubernetes
 Detailed explanation what this repo is about is available at [post](https://blog.softwaremill.com/autoscaling-kafka-streams-applications-with-kubernetes-9aed2e37d3a0).
 
 ## Requirements
