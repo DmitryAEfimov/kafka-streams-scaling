@@ -36,3 +36,23 @@ $ ./kafka-consumer-groups --bootstrap-server --group --describe
 $ ./bin/kafka-console-consumer --bootstrap-server localhost:9092 --topic outScalingTopic --from-beginning --property print.timestamp=true --property print.key=true  --property value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer
 $ echo "get -s -b kafka.consumer:type=consumer-fetch-manager-metrics,client-id=ks-scaling-app-app-id-0db65a38-f83e-4e23-a049-7c66bff16bf3-StreamThread-1-consumer,topic=inSimpleScalingTopic2,partition=1 records-lead" | java -jar jmxterm-1.0.0-uber.jar -l localhost:5556 -v silent -n
 ```
+
+### Pre-install
+Install and configure [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+
+Install and configure [helm](https://helm.sh/docs/intro/install/)
+
+Install external helm charts
+* [bitnami](https://charts.bitnami.com/bitnami)
+* [prometheus-community](https://prometheus-community.github.io/helm-charts)
+  
+``` helm repo add bitnami https://charts.bitnami.com/bitnami ```
+
+``` helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ```
+
+### Install & Run
+Download [deployment directory](https://github.com/DmitryAEfimov/kafka-streams-scaling/tree/main/k8s) to local host
+
+Execute ``` install.sh ``` to install or update chart
+
+Execute ``` delete.sh ``` to delete chart
