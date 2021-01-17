@@ -72,6 +72,7 @@ application:
       rmi: jmxrmi
       whitelistObjectNames:
         - kafka.consumer:*
+        - kube.pod:*
   jmxRemote:
       port: 5555
       auth:

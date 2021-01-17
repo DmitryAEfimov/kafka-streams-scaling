@@ -89,11 +89,10 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "count by (topic) (kafka_consumer_consumer_fetch_manager_metrics_records_lag{container=\"kafka-streams\", topic=\"inScalingTopic\"})",
-              "format": "time_series",
-              "instant": false,
+              "expr": "count by (container) (increase(kube_pod_container_status_running{container=\"kafka-streams\"}[1m]))",
+              "hide": false,
               "interval": "",
-              "legendFormat": "{{"{{"}}topic}}",
+              "legendFormat": "{{"{{"}}container}}",
               "refId": "A"
             }
           ],
@@ -109,7 +108,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Kafka Streams Replicas",
+          "title": "Kafka Streams Replicas Count",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -210,8 +209,8 @@ data:
             },
             "overrides": []
           },
-          "fill": 2,
-          "fillGradient": 2,
+          "fill": 1,
+          "fillGradient": 1,
           "gridPos": {
             "h": 15,
             "w": 24,
@@ -243,12 +242,12 @@ data:
           "seriesOverrides": [],
           "spaceLength": 10,
           "stack": false,
-          "steppedLine": true,
+          "steppedLine": false,
           "targets": [
             {
-              "expr": "avg by (partition, pod) (rate(kafka_consumer_consumer_fetch_manager_metrics_records_lag{container=\"kafka-streams\", topic=\"inScalingTopic\"}[1m]))",
+              "expr": "sum by (container, partition, ) (kafka_consumer_consumer_fetch_manager_metrics_records_lag{container=\"kafka-streams\", topic=\"inScalingTopic\"})",
               "interval": "",
-              "legendFormat": "pod: {{"{{"}}pod}}, partition:{{"{{"}}partition}}",
+              "legendFormat": "{{"{{"}}container}}, partition: {{"{{"partition}}",
               "refId": "A"
             }
           ],
@@ -264,7 +263,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Consumer Avg Lag Rate",
+          "title": "Consumer's Record Lag",
           "tooltip": {
             "shared": true,
             "sort": 0,
