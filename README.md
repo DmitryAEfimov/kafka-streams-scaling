@@ -6,7 +6,7 @@ Detailed explanation what this repo is about is available at [post](https://blog
 2. [Helm](https://helm.sh/docs/intro/install/) version 3+.
 
 ## PreInstall
-Install external helm repositories [bitnami](https://charts.bitnami.com/bitnami) & [prometheus-community](https://prometheus-community.github.io/helm-charts)
+Install external helm repositories [bitnami](https://github.com/bitnami/charts) & [prometheus-community](https://github.com/prometheus-community/helm-charts)
 
 ``` helm repo add bitnami https://charts.bitnami.com/bitnami ```
 
