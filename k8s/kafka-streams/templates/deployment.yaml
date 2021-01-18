@@ -44,13 +44,15 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: BOOTSTRAP_SERVERS_CONFIG
-              value: {{ printf "%s://%s-headless:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }}
+              value: {{ printf "%s://%s:%s" (.Values.kafka.auth.clientProtocol) (include "kafka.fullname" . ) ( .Values.kafka.service.port | toString ) | quote }}
+          {{- with .Values.application.jmxRemote }}
             - name: JMX_REMOTE_PORT
-              value: {{ .Values.application.jmxRemote.port | toString | quote }}
+              value: {{ .port | toString | quote }}
             - name: JMX_REMOTE_AUTH_ENABLE
-              value: {{ .Values.application.jmxRemote.auth.enable | quote }}
+              value: {{ .auth.enable | quote }}
             - name: JMX_REMOTE_SSL
-              value: {{ .Values.application.jmxRemote.ssl | quote }}
+              value: {{ .ssl | quote }}
+          {{- end }}
             - name: METRICS_EXPOSE_PORT
               value: {{ .Values.service.containerPort | toString | quote }}
           ports:
@@ -62,10 +64,10 @@ spec:
           volumeMounts:
             {{- if .Values.application.jmxExport.serviceMonitor.enabled }}
             - name: jmx-export-metrics-config
-              mountPath: {{ .Values.application.jmxExport.metricConfigDir | quote }}
+              mountPath: {{ .Values.application.jmxExport.metricMountPath | quote }}
             {{- end }}
             - name: jmx-export-logging-config
-              mountPath: {{ .Values.application.jmxExport.logPropertyDir | quote }}
+              mountPath: {{ .Values.application.jmxExport.logMountPath | quote }}
       volumes:
           {{- if .Values.application.jmxExport.serviceMonitor.enabled }}
         - name: jmx-export-metrics-config

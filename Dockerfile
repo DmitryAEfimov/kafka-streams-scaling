@@ -5,6 +5,7 @@ RUN gradle build fatJar --no-daemon
 
 FROM openjdk:11-jre-slim
 MAINTAINER  Dmitry Efimov <dmitry.a.efimov@gmail.com>
+ARG jmx_exporter_jar
 
 ENV JMX_REMOTE_PORT=5555
 ENV JMX_REMOTE_AUTH_ENABLE="false"
@@ -13,8 +14,9 @@ ENV METRICS_EXPOSE_PORT=5556
 
 WORKDIR /opt/app
 
+RUN mkdir ./javaagent
 COPY --from=build /home/gradle/app/build/libs/kafka-streams-scaling-all.jar .
-COPY "$JMX_EXPORTER_JAR" .
+COPY "$jmx_exporter_jar" ./javaagent/jmx_prometheus_javaagent.jar
 COPY docker-build/docker-entrypoint.sh .
 
 RUN mkdir ./logging ./metrics
@@ -30,5 +32,8 @@ RUN groupadd -g 999 appuser && \
 USER appuser
 
 EXPOSE $METRICS_EXPOSE_PORT
+
+VOLUME ./logging
+VOLUME ./metrics
 
 ENTRYPOINT ["/opt/app/docker-entrypoint.sh"]

@@ -58,8 +58,8 @@ public class Sender {
 	}
 
 	private void initChunks() {
-		int chunkCnt = Optional.ofNullable(System.getenv("SENDER_CHUNK_CNT")).map(Integer::parseInt).orElse(30);
-		int chunkSize = Optional.ofNullable(System.getenv("SENDER_CHUNK_SIZE")).map(Integer::parseInt).orElse(10_000);
+		int chunkCnt = Optional.ofNullable(System.getenv("MESSAGE_KEY_CNT")).map(Integer::parseInt).orElse(30);
+		int chunkSize = Optional.ofNullable(System.getenv("KEY_CHUNK_SIZE")).map(Integer::parseInt).orElse(10_000);
 
 		this.content = new HashMap<>(chunkCnt);
 		for (int i = 0; i < chunkCnt; i++) {

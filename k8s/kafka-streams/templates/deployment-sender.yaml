@@ -46,9 +46,9 @@ spec:
               value: "1"
             - name: IN_TOPIC_NAME
               value: {{ .Values.application.kafka.inTopicName | quote }}
-            - name: SENDER_CHUNK_CNT
-              value: {{ .Values.application.sender.chunkCnt | quote }}
-            - name: SENDER_CHUNK_SIZE
+            - name: MESSAGE_KEY_CNT
+              value: {{ .Values.application.sender.keyCnt | quote }}
+            - name: KEY_CHUNK_SIZE
               value: {{ .Values.application.sender.chunkSize | quote }}
           resources:
           {{- toYaml .Values.resources | nindent 12 }}

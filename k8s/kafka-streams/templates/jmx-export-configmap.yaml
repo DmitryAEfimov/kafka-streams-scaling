@@ -1,26 +1,13 @@
-{{- $configParams := .Values.application.jmxExport.params -}}
+{{- $jmxParams := .Values.application.jmxRemote -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "kafka-streams.fullname" . }}-metrics-cm
 data:
   metrics.yaml: |
-    jmxUrl: {{ printf "service:jmx:rmi:///jndi/rmi://%s:%s/%s" $configParams.url ( $configParams.port | toString ) $configParams.rmi | quote }}
-    startDelaySeconds: {{ $configParams.startDelaySeconds | default 0 }}
-    lowercaseOutputName: {{ $configParams.lowercaseOutputName | default true }}
-    lowercaseOutputLabelNames: {{ $configParams.lowercaseOutputLabelNames | default true }}
-    ssl: {{ $configParams.ssl | default false }}
-    {{- if $configParams.whitelistObjectNames }}
-    whitelistObjectNames: ["{{ join "\",\"" $configParams.whitelistObjectNames }}"]
-    {{- end }}
-    {{- if $configParams.blacklistObjectNames }}
-    blacklistObjectNames: ["{{ join "\",\"" $configParams.blacklistObjectNames }}"]
-    {{- end }}
-    {{- if $configParams.rules }}
-    rules:
-      {{- range $configParams.rules }}
-        {{- toYaml .Values.resources | nindent 2 }}
-      {{- end }}
+    jmxUrl: {{ printf "service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi" $jmxParams.url ( $jmxParams.port | toString ) | quote }}
+    {{- with .Values.application.jmxExport.config }}
+      {{- toYaml . | nindent 4 }}
     {{- end }}
 ---
 apiVersion: v1
